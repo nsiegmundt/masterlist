@@ -1,0 +1,128 @@
+extends layout
+
+block content
+  .container
+    .row
+      .col.text-center
+        h1 Sieg's List
+        hr
+    .row
+      .col.text-center
+        input#songInput.song-input(placeholder='Enter comma sepparated keywords...')
+        label.whole-words-label(for='wholeWords') Whole Words Only?
+        input#wholeWords(name='wholeWords' type='checkbox')
+        input#songSearch.song-search.btn.btn-primary(type='button' value='Search')
+    .row
+      .col.text-center
+        #resultsContainer.results-container
+          span.results-title Results Found: 
+          span.results-length
+    .row
+      .col.text-center
+        input#export.btn.btn-primary.export-button(type='button' value='Export To CSV')
+    .row
+      .col.text-center
+        table#songList.song-list
+          thead 
+            tr
+              th Artist
+              th Song 
+              th Year
+          tbody
+    #downloadLink(style="display:none")
+
+  script.
+    $(() => {
+      $('#songInput').val('');
+      $('#wholeWords').prop( "checked", false );
+    });
+
+    $('#songSearch').click(function(){
+      getSongs();
+    });
+    
+    $(document).on('keypress',function(e) {
+      if(e.which == 13) {
+        getSongs();   
+      }
+    });
+
+    function getSongs() {
+      var keywords = $('#songInput').val().split(',').map(x => x.trim()).filter(x => x);
+
+      if(!keywords.length)
+        return;
+
+      $('.loading-overlay').show();
+
+      fetch('/songsheet', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            keywords: keywords,
+            wholeWord: $('#wholeWords').is(':checked')
+          })
+        })
+        .then(data => data.json())
+        .then(data => {
+            var songArray = data.songArray;
+            $('#songList tbody').empty();
+
+            songArray.forEach(line => {
+              var row = `
+                <tr>
+                  <td>${line.artist}</td>
+                  <td>${line.song}</td>
+                  <td>${line.year}</td>
+                </tr>
+              `;
+
+              $('#songList tbody').append(row);
+            })
+
+            $('#songList').show();
+            $('.loading-overlay').hide();
+            $('#export').show();
+            $('.results-container').show()
+            $('.results-length').text(songArray.length)
+        })
+        .catch(err => {
+          console.log(err);
+
+          $('.loading-overlay').hide();
+        });
+    }
+
+    $('#export').click(function(){
+      htmlToCSV();
+    });
+
+    function htmlToCSV() {
+      var csv = "sep=~\n";
+
+      $("table").find("tr").each(function() {
+          var sep = "";
+          $(this).find("th, td").each(function() {
+              csv += sep + $(this).text();
+              sep = "~";
+          });
+          csv += "\n";
+      });
+
+      window.URL = window.URL || window.webkiURL;
+
+      var blob = new Blob([csv], {type: "text/csv"});
+      var blobURL = window.URL.createObjectURL(blob);
+
+      $("#downloadLink").html("");
+      $("<a></a>").
+        attr("href", blobURL).
+        attr("download", "SongList.csv").
+        text("Download Data").
+        appendTo('#downloadLink');
+
+      $('#downloadLink').find('a')[0].click();
+    }

@@ -1,0 +1,15 @@
+doctype html
+html
+  head
+    title= title
+    link(rel='stylesheet', href='/css/bootstrap.min.css')
+    link(rel='stylesheet', href='/stylesheets/style.css')
+    script(src='/jquery/jquery.js')
+  body
+    .loading-overlay
+      .lds-ring
+        div
+        div
+        div
+        div
+    block content
