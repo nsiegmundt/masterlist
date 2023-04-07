@@ -12,6 +12,10 @@ router.post('/', function(req, res, next) {
 
     const rowData = [];
 
+    console.log(process.env);
+    console.log(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL);
+    console.log(process.env.GOOGLE_PRIVATE_KEY);
+
     // Cache the rows after first request, don't need to keep calling the sheets API
     if(!songCache.length) {
       await doc.useServiceAccountAuth({
